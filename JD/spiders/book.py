@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from ..items import JdItem
+from JD.items import JdItem
 import json
 import re
 
-class BookSpider(scrapy.Spider):
-    name = 'book'
-    allowed_domains = ['jd.com','p.3.cn']
-    start_urls = ['https://book.jd.com/booksort.html']
+# ------1.导入分布式爬虫类
+from scrapy_redis.spiders import RedisSpider
 
+# ------2. 继承分布式爬虫类
+class BookSpider(RedisSpider):
+    name = 'book'
+    # ------3. 注释掉allowed_domains及start_urls
+    # allowed_domains = ['jd.com','p.3.cn']
+    # start_urls = ['https://book.jd.com/booksort.html']
+
+    # ------4. 设置redis-key
+    redis_key = "jd:book"
+    # ------5. 设置__init__獲取允許的域
+    def __init__(self, *args, **kwargs):
+        domain = kwargs.pop("domain", "")
+        self.allowed_domains = list(filter(None, domain.split(',')))
+        super(BookSpider, self).__init__(*args, **kwargs)
 
     def parse(self, response):
         # 获取图书大分类
@@ -69,4 +81,4 @@ class BookSpider(scrapy.Spider):
         item = response.meta.get("meta_1")
         dict_data = json.loads(response.body)
         item["price"] = dict_data[0]["p"]
-        print(item)
+        yield item
